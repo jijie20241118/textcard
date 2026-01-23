@@ -95,7 +95,7 @@
         </header>
 
         <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar: Width increased to 35% of the screen -->
+            <!-- Sidebar: Width 35% -->
             <aside class="w-[35%] glass-panel flex flex-col overflow-y-auto shrink-0 z-20 custom-scrollbar p-8 space-y-8">
                 
                 <!-- Split Strategy -->
@@ -108,7 +108,7 @@
                     </div>
                 </section>
 
-                <!-- Input Text: Height increased to over 50% of the viewport height -->
+                <!-- Input Text: Height 55vh -->
                 <section>
                     <label class="ui-text-label uppercase">内容编辑</label>
                     <textarea 
@@ -162,7 +162,7 @@
                     </div>
                 </section>
 
-                <!-- Colors & Global BG -->
+                <!-- Colors & Global BG & NEW: Opacity -->
                 <section class="pb-12 space-y-6">
                     <label class="ui-text-label uppercase">全局外观</label>
                     <div class="grid grid-cols-2 gap-4">
@@ -174,6 +174,15 @@
                             <span class="text-[9px] font-black text-green-800/40 block mb-2">卡片底色</span>
                             <input type="color" value="#ffffff" oninput="updateStyle('backgroundColor', this.value)" class="w-full h-8 rounded cursor-pointer border-none bg-transparent">
                         </div>
+                    </div>
+
+                    <!-- NEW: Background Opacity Slider -->
+                    <div class="p-4 bg-white rounded-xl border border-green-900/5 shadow-sm">
+                        <div class="flex justify-between text-[9px] font-black text-green-800/40 mb-2">
+                            <span>背景图片透明度</span>
+                            <span id="bgOpacityVal">40%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="40" oninput="updateStyle('backgroundOpacity', this.value / 100)" class="w-full h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer">
                     </div>
                     
                     <div class="relative group h-28 rounded-2xl border-2 border-dashed border-green-300/50 bg-white/40 flex flex-col items-center justify-center hover:bg-white/80 cursor-pointer overflow-hidden transition-all">
@@ -246,6 +255,7 @@
             currentStyle[prop] = val;
             if (prop === 'fontSize') document.getElementById('fontSizeVal').innerText = val;
             if (prop === 'padding') document.getElementById('paddingVal').innerText = val;
+            if (prop === 'backgroundOpacity') document.getElementById('bgOpacityVal').innerText = Math.round(val * 100) + '%';
             
             if (prop === 'textAlign') {
                 document.querySelectorAll('.align-h-btn').forEach(b => {
