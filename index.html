@@ -1,464 +1,429 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Type, 
-  Image as ImageIcon, 
-  Download, 
-  Split, 
-  Trash2, 
-  Plus,
-  Upload,
-  X,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignVerticalJustifyStart,
-  AlignVerticalJustifyCenter,
-  AlignVerticalJustifyEnd,
-  Layers,
-  Wind,
-  Framer,
-  ScrollText,
-  RefreshCw
-} from 'lucide-react';
-
-// 动态加载外部库
-const useScript = (src) => {
-  const [status, setStatus] = useState(src ? 'loading' : 'idle');
-  useEffect(() => {
-    if (!src) return;
-    let script = document.querySelector(`script[src="${src}"]`);
-    if (!script) {
-      script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      script.setAttribute('data-status', 'loading');
-      document.body.appendChild(script);
-      const setAttributeFromEvent = (event) => {
-        script.setAttribute('data-status', event.type === 'load' ? 'ready' : 'error');
-        setStatus(event.type === 'load' ? 'ready' : 'error');
-      };
-      script.addEventListener('load', setAttributeFromEvent);
-      script.addEventListener('error', setAttributeFromEvent);
-    } else {
-      setStatus(script.getAttribute('data-status'));
-    }
-  }, [src]);
-  return status;
-};
-
-const FONT_OPTIONS = [
-  { name: '灵感黑体', value: 'sans-serif' },
-  { name: '温柔宋体', value: '"Noto Serif SC", serif' },
-  { name: '治愈楷体', value: '"Ma Shan Zheng", cursive' },
-  { name: '童趣圆体', value: '"ZCOOL KuaiLe", cursive' },
-  { name: '诗意手写', value: '"ZCOOL XiaoWei", serif' },
-  { name: '简约无衬线', value: '"Inter", system-ui' },
-];
-
-export default function CardSplitterApp() {
-  const html2canvasStatus = useScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-
-  const [inputText, setInputText] = useState("");
-  const [cards, setCards] = useState([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [activeSplitMode, setActiveSplitMode] = useState('separator'); 
-  const cardRefs = useRef({});
-  const fileInputRef = useRef(null);
-  const [currentUploadId, setCurrentUploadId] = useState(null);
-
-  const [styleSettings, setStyleSettings] = useState({
-    fontFamily: '"Noto Serif SC", serif',
-    fontSize: 24,
-    textColor: '#1a202c', 
-    bgColor: '#f0f4f1', 
-    bgImage: null,
-    bgOpacity: 100,
-    textAlign: 'center',
-    verticalAlign: 'center',
-    padding: 12,
-    lineHeight: 1.4,
-    letterSpacing: 0 // 改为数值
-  });
-
-  const getChunks = (text, mode) => {
-    if (!text.trim()) return [];
-    if (mode === 'separator') return text.split('---').map(s => s.trim()).filter(s => s !== '');
-    if (mode === 'newline') return text.split('\n').map(s => s.trim()).filter(s => s !== '');
-    if (mode === 'length') {
-      const limit = 80;
-      const res = [];
-      for (let i = 0; i < text.length; i += limit) res.push(text.slice(i, i + limit));
-      return res;
-    }
-    return [text];
-  };
-
-  useEffect(() => {
-    if (inputText.trim()) {
-      const chunks = getChunks(inputText, activeSplitMode);
-      setCards(chunks.map((text, i) => ({
-        id: `card-${i}-${activeSplitMode}-${Date.now()}`,
-        text: text,
-        customBg: cards[i]?.customBg || null 
-      })));
-    }
-  }, [inputText, activeSplitMode]);
-
-  useEffect(() => {
-    if (cards.length === 0 && !inputText) {
-      setCards([{ id: 'welcome', text: "此处为实时预览区。\n您可以从左侧侧边栏编辑文字。\n通过减少内边距和调整字号，\n可以让每一行容纳更多的内容，\n并且让排版紧贴卡片边缘。", customBg: null }]);
-    }
-  }, []);
-
-  const triggerUpload = (id) => {
-    setCurrentUploadId(id);
-    if (fileInputRef.current) fileInputRef.current.click();
-  };
-
-  const handleCardImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && currentUploadId) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setCards(prevCards => 
-          prevCards.map(c => c.id === currentUploadId ? { ...c, customBg: ev.target.result } : c)
-        );
-      };
-      reader.readAsDataURL(file);
-      e.target.value = null;
-    }
-  };
-
-  const downloadImage = (blob, filename) => {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadAll = async () => {
-    if (html2canvasStatus !== 'ready') return;
-    setIsGenerating(true);
-
-    try {
-      for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        const element = cardRefs.current[card.id];
-        if (element) {
-          const canvas = await window.html2canvas(element, { 
-            scale: 3, 
-            useCORS: true,
-            backgroundColor: styleSettings.bgColor,
-            logging: false
-          });
-          
-          canvas.toBlob((blob) => {
-            downloadImage(blob, `mori_card_${i + 1}.png`);
-          }, "image/png");
-          
-          await new Promise(resolve => setTimeout(resolve, 400));
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Card - 极简文字卡片切分器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@200;400;700&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&family=Inter:wght@200;400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #e1f0e3 0%, #c1e0c2 50%, #ecf5e6 100%);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: #1a2e1a;
         }
-      }
-    } catch (e) { console.error(e); }
-    setIsGenerating(false);
-  };
-
-  return (
-    <div className="flex flex-col h-screen bg-[#f1f5f2] text-[#1a202c] font-sans overflow-hidden">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@200;400;700&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&family=Inter:wght@200;400&display=swap');
-        
-        .forest-gradient {
-          position: fixed;
-          top: 0; left: 0; width: 100%; height: 100%;
-          background: linear-gradient(135deg, #e1f0e3 0%, #c1e0c2 50%, #ecf5e6 100%);
-          z-index: -1;
-        }
-
         .glass-panel {
-          background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(40px);
-          border-right: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(25px);
+            border-right: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.05);
         }
-
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #81c784; border-radius: 10px; }
         
-        .ui-label {
-          font-size: 0.95rem; 
-          font-weight: 700; 
-          color: #2e4a36; 
-          letter-spacing: 0.05em;
-          margin-bottom: 0.85rem;
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
+        .card-preview {
+            aspect-ratio: 9/16;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease;
         }
-
-        select, textarea, input[type="text"], input[type="number"] {
-          font-size: 1rem !important;
-          border: 1.5px solid rgba(46, 74, 54, 0.1) !important;
-          color: #1a202c !important;
-          font-weight: 500;
-        }
-
-        select:focus, textarea:focus, input:focus {
-          border-color: #4a7c59 !important;
-          background: white !important;
-        }
-
         .card-content-area {
-          white-space: pre-wrap;
-          word-break: break-all;
-          user-select: none;
-          width: 100%;
-          display: block;
+            white-space: pre-wrap;
+            word-break: break-all;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            transition: all 0.3s ease;
         }
-      `}</style>
+        input[type="range"] {
+            accent-color: #166534;
+        }
+        .btn-active {
+            background: white !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            color: #166534 !important;
+            font-weight: bold;
+        }
+        .ui-text-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #2d4a2d;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .card-action-btn {
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+        .card-action-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+        .btn-delete:hover {
+            color: #ef4444;
+            border-color: #fee2e2;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
 
-      <div className="forest-gradient"></div>
-
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleCardImageUpload} 
-        accept="image/*" 
-        className="hidden" 
-      />
-
-      <header className="h-20 px-8 flex items-center justify-between z-30 shrink-0 border-b border-white/30 bg-white/10 backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <div className="p-2.5 bg-white shadow-sm rounded-xl text-green-700">
-            <Wind size={22} />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold tracking-widest text-green-900">MORI CARD</span>
-            <span className="text-[10px] font-bold tracking-[0.3em] text-green-700/60 uppercase">Maximum Space Util.</span>
-          </div>
-        </div>
-        <button 
-          onClick={handleDownloadAll}
-          disabled={isGenerating}
-          className="flex items-center gap-2 px-8 py-3 bg-green-800 text-white rounded-full text-sm font-bold transition-all hover:bg-green-900 hover:shadow-lg active:scale-95 disabled:bg-stone-400"
-        >
-          {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Download size={18} />}
-          {isGenerating ? '导出中...' : '批量导出高清图'}
-        </button>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        
-        <aside className="w-[22rem] glass-panel flex flex-col overflow-y-auto shrink-0 z-20 custom-scrollbar p-8 space-y-10">
-          
-          <section>
-            <h3 className="ui-label"><Split size={16}/> 拆分策略</h3>
-            <div className="grid grid-cols-3 gap-2 p-1.5 bg-green-200/20 rounded-xl border border-green-200/30">
-              {[
-                { id: 'separator', label: '符号' },
-                { id: 'newline', label: '换行' },
-                { id: 'length', label: '字数' },
-              ].map(mode => (
-                <button 
-                  key={mode.id}
-                  onClick={() => setActiveSplitMode(mode.id)}
-                  className={`py-2 rounded-lg text-xs transition-all ${
-                    activeSplitMode === mode.id ? 'bg-white shadow-sm text-green-800 font-bold' : 'text-green-900/40 hover:text-green-800'
-                  }`}
-                >
-                  {mode.label}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h3 className="ui-label"><ScrollText size={16}/> 内容编辑</h3>
-            <textarea
-              className="w-full h-40 p-4 bg-white/50 rounded-2xl text-sm outline-none focus:bg-white transition-all border border-white/50 placeholder:text-green-900/20"
-              placeholder="内容在此处编辑，使用 --- 分页"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-            />
-          </section>
-
-          <section className="space-y-8">
-            <h3 className="ui-label"><Framer size={16}/> 版式微调</h3>
-
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold text-green-800/50 uppercase ml-1">选择字体</label>
-              <select 
-                value={styleSettings.fontFamily}
-                onChange={(e) => setStyleSettings({...styleSettings, fontFamily: e.target.value})}
-                className="w-full bg-white/70 p-3 rounded-xl border text-sm outline-none cursor-pointer appearance-none"
-              >
-                {FONT_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
-              </select>
-            </div>
-
-            <div className="space-y-6">
-               <div>
-                <div className="flex justify-between items-center mb-3 px-1 text-xs font-bold text-green-900/70">
-                  <span>文字大小</span>
-                  <span className="bg-green-100 px-2 py-0.5 rounded text-[10px]">{styleSettings.fontSize}px</span>
+    <div id="app" class="flex flex-col h-screen">
+        <!-- Header -->
+        <header class="h-16 px-6 flex items-center justify-between z-30 shrink-0 border-b border-white/30 bg-white/20 backdrop-blur-md">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-green-800 shadow-md rounded-lg text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7A7.1 7.1 0 1 1 5 13.1"/><path d="m7 21 7.9-6.3"/><path d="m11 21 4.7-9.4"/><path d="m14 21 2.1-4.2"/></svg>
                 </div>
-                <input type="range" min="10" max="100" value={styleSettings.fontSize} onChange={(e) => setStyleSettings({...styleSettings, fontSize: parseInt(e.target.value)})} className="w-full accent-green-700 h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer" />
-              </div>
-
-               <div>
-                <div className="flex justify-between items-center mb-3 px-1 text-xs font-bold text-green-900/70">
-                  <span>边界留白 (Padding)</span>
-                  <span className="bg-green-100 px-2 py-0.5 rounded text-[10px]">{styleSettings.padding}px</span>
+                <div class="flex flex-col">
+                    <span class="text-sm font-black tracking-widest text-green-900 leading-none">TEXT CARD</span>
+                    <span class="text-[9px] font-bold tracking-[0.25em] text-green-700/70 uppercase">Find Yourself</span>
                 </div>
-                <input type="range" min="0" max="150" value={styleSettings.padding} onChange={(e) => setStyleSettings({...styleSettings, padding: parseInt(e.target.value)})} className="w-full accent-green-700 h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/40 p-3 rounded-xl border border-green-200/30">
-                   <label className="text-[10px] font-bold text-green-800/40 uppercase block mb-2">行高</label>
-                   <input type="number" step="0.1" min="1" max="4" value={styleSettings.lineHeight} onChange={(e)=>setStyleSettings({...styleSettings, lineHeight: parseFloat(e.target.value)})} className="w-full bg-transparent text-sm outline-none" />
-                </div>
-                <div className="bg-white/40 p-3 rounded-xl border border-green-200/30">
-                   <label className="text-[10px] font-bold text-green-800/40 uppercase block mb-2">字距 (em)</label>
-                   <input type="number" step="0.01" min="-0.5" max="1" value={styleSettings.letterSpacing} onChange={(e)=>setStyleSettings({...styleSettings, letterSpacing: parseFloat(e.target.value)})} className="w-full bg-transparent text-sm outline-none" />
-                </div>
-              </div>
-
-              <div className="flex bg-green-200/10 p-1.5 rounded-xl border border-green-200/20">
-                {['left', 'center', 'right'].map(align => (
-                  <button key={align} onClick={() => setStyleSettings({...styleSettings, textAlign: align})} className={`flex-1 flex justify-center py-2.5 rounded-lg transition-all ${styleSettings.textAlign === align ? 'bg-white shadow-sm text-green-800' : 'text-green-900/20'}`}>
-                    {align === 'left' ? <AlignLeft size={16}/> : align === 'center' ? <AlignCenter size={16}/> : <AlignRight size={16}/>}
-                  </button>
-                ))}
-              </div>
-              
-              <div className="flex bg-green-200/10 p-1.5 rounded-xl border border-green-200/20">
-                {['top', 'center', 'bottom'].map(valign => (
-                  <button key={valign} onClick={() => setStyleSettings({...styleSettings, verticalAlign: valign})} className={`flex-1 flex justify-center py-2.5 rounded-lg transition-all ${styleSettings.verticalAlign === valign ? 'bg-white shadow-sm text-green-800' : 'text-green-900/20'}`}>
-                    {valign === 'top' ? <AlignVerticalJustifyStart size={16}/> : valign === 'center' ? <AlignVerticalJustifyCenter size={16}/> : <AlignVerticalJustifyEnd size={16}/>}
-                  </button>
-                ))}
-              </div>
             </div>
-          </section>
+            <button onclick="downloadAllCards()" id="downloadBtn" class="flex items-center gap-2 px-6 py-2.5 bg-green-800 text-white rounded-full text-xs font-bold shadow-lg hover:bg-green-900 active:scale-95 transition-all">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                <span>批量导出高清图</span>
+            </button>
+        </header>
 
-          <section className="pb-10">
-            <h3 className="ui-label"><ImageIcon size={16}/> 背景</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-white/60 rounded-xl border border-green-200/30">
-                <span className="text-[10px] font-bold text-green-800/40 uppercase block mb-2">文字色</span>
-                <input type="color" value={styleSettings.textColor} onChange={(e) => setStyleSettings({...styleSettings, textColor: e.target.value})} className="w-full h-6 rounded cursor-pointer" />
-              </div>
-              <div className="p-3 bg-white/60 rounded-xl border border-green-200/30">
-                <span className="text-[10px] font-bold text-green-800/40 uppercase block mb-2">背景色</span>
-                <input type="color" value={styleSettings.bgColor} onChange={(e) => setStyleSettings({...styleSettings, bgColor: e.target.value})} className="w-full h-6 rounded cursor-pointer" />
-              </div>
-            </div>
-            <div className="mt-4 relative group w-full h-24 rounded-2xl border-2 border-dashed border-green-300/50 flex items-center justify-center hover:bg-white/60 transition-all cursor-pointer overflow-hidden">
-               {styleSettings.bgImage ? (
-                <img src={styleSettings.bgImage} className="w-full h-full object-cover" alt="BG" />
-              ) : (
-                <div className="flex flex-col items-center opacity-40">
-                  <Upload size={20} />
-                  <span className="text-[10px] font-bold mt-1">全局底图</span>
-                </div>
-              )}
-              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
-                const f = e.target.files[0];
-                if(f) {
-                  const r = new FileReader();
-                  r.onload = (ev) => setStyleSettings(s => ({...s, bgImage: ev.target.result}));
-                  r.readAsDataURL(f);
-                }
-              }} />
-            </div>
-          </section>
-        </aside>
-
-        <main className="flex-1 p-8 md:p-16 overflow-y-auto custom-scrollbar">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 pb-40">
-              {cards.map((card, index) => (
-                <div key={card.id} className="group relative">
-                  
-                  {/* Card Main Container */}
-                  <div 
-                    ref={el => cardRefs.current[card.id] = el}
-                    className="relative w-full aspect-[9/16] rounded-xl overflow-hidden shadow-2xl transition-all duration-700 bg-white"
-                    style={{ backgroundColor: styleSettings.bgColor }}
-                  >
-                    {/* Background Layer */}
-                    {(card.customBg || styleSettings.bgImage) && (
-                      <div 
-                        className="absolute inset-0 z-0 bg-cover bg-center" 
-                        style={{ 
-                          backgroundImage: `url(${card.customBg || styleSettings.bgImage})`,
-                          opacity: card.customBg ? 1 : (styleSettings.bgOpacity / 100)
-                        }} 
-                      />
-                    )}
-
-                    {/* Content Container - Compact Logic */}
-                    <div 
-                      className={`relative z-10 w-full h-full flex transition-all duration-500 ${
-                        styleSettings.verticalAlign === 'top' ? 'items-start' : 
-                        styleSettings.verticalAlign === 'bottom' ? 'items-end' : 'items-center'
-                      }`}
-                      style={{ padding: `${styleSettings.padding}px` }}
-                    >
-                      <div
-                        className="card-content-area"
-                        style={{
-                          fontFamily: styleSettings.fontFamily,
-                          fontSize: `${styleSettings.fontSize}px`,
-                          color: styleSettings.textColor,
-                          textAlign: styleSettings.textAlign,
-                          lineHeight: styleSettings.lineHeight,
-                          letterSpacing: `${styleSettings.letterSpacing}em`,
-                          textShadow: styleSettings.bgColor === '#ffffff' ? 'none' : '0 1px 1px rgba(0,0,0,0.1)'
-                        }}
-                      >
-                        {card.text}
-                      </div>
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="w-80 glass-panel flex flex-col overflow-y-auto shrink-0 z-20 custom-scrollbar p-6 space-y-7">
+                
+                <!-- Split Strategy -->
+                <section>
+                    <label class="ui-text-label uppercase">拆分模式</label>
+                    <div class="grid grid-cols-3 gap-1 p-1 bg-green-900/10 rounded-xl border border-green-900/5">
+                        <button onclick="setSplitMode('separator')" class="mode-btn btn-active py-2 rounded-lg text-[10px]" data-mode="separator">符号 (---)</button>
+                        <button onclick="setSplitMode('newline')" class="mode-btn text-green-900/50 py-2 rounded-lg text-[10px]" data-mode="newline">按行拆分</button>
+                        <button onclick="setSplitMode('length')" class="mode-btn text-green-900/50 py-2 rounded-lg text-[10px]" data-mode="length">固定长度</button>
                     </div>
-                  </div>
+                </section>
 
-                  {/* Context Actions */}
-                  <div className="absolute right-4 top-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
-                    <button 
-                      onClick={() => setCards(cards.filter(c => c.id !== card.id))} 
-                      className="p-2.5 bg-white/90 shadow-lg rounded-lg text-red-400 hover:text-red-600"
-                    >
-                      <Trash2 size={16}/>
-                    </button>
-                    <button 
-                      onClick={() => triggerUpload(card.id)}
-                      className="p-2.5 bg-white/90 shadow-lg rounded-lg text-green-700 hover:text-green-800"
-                    >
-                      <ImageIcon size={16}/>
-                    </button>
-                  </div>
+                <!-- Input Text -->
+                <section>
+                    <label class="ui-text-label uppercase">内容编辑</label>
+                    <textarea 
+                        id="mainInput"
+                        oninput="handleInput()"
+                        class="w-full h-32 p-4 bg-white shadow-inner rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-700/20 transition-all border border-green-900/5 placeholder:text-stone-300"
+                        placeholder="输入文字，系统将根据策略自动生成卡片..."
+                    ></textarea>
+                </section>
 
-                  <div className="mt-4 flex items-center justify-between px-2 opacity-40">
-                    <span className="text-[10px] font-bold tracking-tighter text-green-900 uppercase italic">Mori Card Series</span>
-                    <span className="text-[10px] font-bold text-green-950">NO.{index + 1}</span>
-                  </div>
+                <!-- Typography -->
+                <section class="space-y-5">
+                    <label class="ui-text-label uppercase">版面控制</label>
+                    
+                    <div>
+                        <span class="text-[10px] text-green-800/60 font-bold block mb-2">艺术字体</span>
+                        <select onchange="updateStyle('fontFamily', this.value)" class="w-full bg-white p-2.5 rounded-xl border border-green-900/10 text-xs outline-none cursor-pointer shadow-sm">
+                            <option value="sans-serif">简约黑体 (Modern)</option>
+                            <option value="'Noto Serif SC', serif" selected>温柔宋体 (Serif)</option>
+                            <option value="'Ma Shan Zheng', cursive">治愈楷体 (Script)</option>
+                            <option value="'ZCOOL KuaiLe', cursive">童趣圆体 (Rounded)</option>
+                            <option value="'ZCOOL XiaoWei', serif">诗意手写 (Handwriting)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex justify-between text-[10px] font-bold text-green-900/70 mb-2">
+                                <span>字号</span>
+                                <span id="fontSizeVal">24px</span>
+                            </div>
+                            <input type="range" min="12" max="100" value="24" oninput="updateStyle('fontSize', this.value + 'px')" class="w-full h-1 bg-green-200 rounded-lg appearance-none">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] font-bold text-green-900/70 mb-2">
+                                <span>边距</span>
+                                <span id="paddingVal">40px</span>
+                            </div>
+                            <input type="range" min="0" max="120" value="40" oninput="updateStyle('padding', this.value + 'px')" class="w-full h-1 bg-green-200 rounded-lg appearance-none">
+                        </div>
+                    </div>
+
+                    <!-- Alignment Controls -->
+                    <div class="space-y-3">
+                        <span class="text-[10px] text-green-800/60 font-bold block">水平与垂直对齐</span>
+                        <div class="flex gap-1 bg-green-900/10 p-1 rounded-xl border border-green-900/5">
+                            <button onclick="updateStyle('textAlign', 'left')" class="align-h-btn flex-1 py-2 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="left"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 10H3M21 6H3M21 14H3M17 18H3"/></svg></button>
+                            <button onclick="updateStyle('textAlign', 'center')" class="align-h-btn btn-active flex-1 py-2 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 10H6M21 6H3M21 14H3M18 18H6"/></svg></button>
+                            <button onclick="updateStyle('textAlign', 'right')" class="align-h-btn flex-1 py-2 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="right"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg></button>
+                        </div>
+                        <div class="flex gap-1 bg-green-900/10 p-1 rounded-xl border border-green-900/5">
+                            <button onclick="updateStyle('alignItems', 'flex-start')" class="align-v-btn flex-1 py-2 flex flex-col items-center gap-1 hover:bg-white rounded-lg transition-all text-green-900/30" data-val="flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m4 6 16 0M4 10h12M4 14h8"/></svg><span class="text-[8px] font-bold">置顶</span></button>
+                            <button onclick="updateStyle('alignItems', 'center')" class="align-v-btn btn-active flex-1 py-2 flex flex-col items-center gap-1 hover:bg-white rounded-lg transition-all text-green-900/30" data-val="center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M8 8h8M10 16h4"/></svg><span class="text-[8px] font-bold">居中</span></button>
+                            <button onclick="updateStyle('alignItems', 'flex-end')" class="align-v-btn flex-1 py-2 flex flex-col items-center gap-1 hover:bg-white rounded-lg transition-all text-green-900/30" data-val="flex-end"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 18h16M8 14h12M12 10h8"/></svg><span class="text-[8px] font-bold">置底</span></button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Background -->
+                <section class="pb-10 space-y-4">
+                    <label class="ui-text-label uppercase">全局色彩与纹理</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-white rounded-xl border border-green-900/5 shadow-sm">
+                            <span class="text-[9px] font-black text-green-800/40 block mb-1">文字颜色</span>
+                            <input type="color" value="#1a202c" oninput="updateStyle('color', this.value)" class="w-full h-6 rounded cursor-pointer border-none bg-transparent">
+                        </div>
+                        <div class="p-3 bg-white rounded-xl border border-green-900/5 shadow-sm">
+                            <span class="text-[9px] font-black text-green-800/40 block mb-1">卡片底色</span>
+                            <input type="color" value="#ffffff" oninput="updateStyle('backgroundColor', this.value)" class="w-full h-6 rounded cursor-pointer border-none bg-transparent">
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2 p-3 bg-white rounded-xl border border-green-900/5 shadow-sm">
+                        <div class="flex justify-between text-[10px] font-bold text-green-900/70">
+                            <span>全局底图不透明度</span>
+                            <span id="bgOpacityVal">40%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="40" oninput="updateStyle('backgroundOpacity', this.value / 100)" class="w-full h-1 bg-green-200 rounded-lg appearance-none">
+                    </div>
+
+                    <div class="relative group h-24 rounded-2xl border-2 border-dashed border-green-300/50 bg-white/40 flex flex-col items-center justify-center hover:bg-white/80 cursor-pointer overflow-hidden transition-all">
+                        <svg class="opacity-40 text-green-800" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        <span class="text-[10px] font-bold mt-2 text-green-900/60">上传默认底图</span>
+                        <input type="file" onchange="handleBgUpload(event, 'global')" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <div id="bgPreview" class="absolute inset-0 hidden"><img class="w-full h-full object-cover"></div>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Main Preview -->
+            <main class="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
+                <div id="cardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 pb-40">
+                    <!-- Cards will be injected here -->
                 </div>
-              ))}
-
-              <button 
-                onClick={() => setCards([...cards, { id: `card-${Date.now()}`, text: "新内容...", customBg: null }])}
-                className="w-full aspect-[9/16] rounded-xl border border-dashed border-green-300/50 flex flex-col items-center justify-center group hover:bg-white/40 transition-all bg-white/5"
-              >
-                <Plus size={24} className="text-green-300 group-hover:scale-125 transition-transform" />
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
+            </main>
+        </div>
     </div>
-  );
-}
+
+    <script>
+        let splitMode = 'separator';
+        let cardSpecificBgs = {}; // Store custom background for specific card index
+        let currentStyle = {
+            fontFamily: "'Noto Serif SC', serif",
+            fontSize: '24px',
+            color: '#1a202c',
+            backgroundColor: '#ffffff',
+            padding: '40px',
+            textAlign: 'center',
+            alignItems: 'center',
+            lineHeight: '1.6',
+            letterSpacing: '0em',
+            backgroundImage: 'none',
+            backgroundOpacity: 0.4
+        };
+
+        const defaultText = "文字卡片 (Text Card)\n---\n可按照符号、行、字数拆分。\n\n点击卡片右下角的图片按钮上传底图，\n点击红色垃圾桶图标即可删除。";
+        
+        window.onload = () => {
+            document.getElementById('mainInput').value = defaultText;
+            renderCards();
+        };
+
+        function setSplitMode(mode) {
+            splitMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                if(btn.dataset.mode === mode) btn.classList.add('btn-active');
+                else btn.classList.remove('btn-active');
+            });
+            renderCards();
+        }
+
+        function handleInput() {
+            renderCards();
+        }
+
+        function getChunks(text) {
+            if (!text.trim()) return [];
+            if (splitMode === 'separator') return text.split('---').map(s => s.trim()).filter(s => s !== '');
+            if (splitMode === 'newline') return text.split('\n').map(s => s.trim()).filter(s => s !== '');
+            if (splitMode === 'length') {
+                const chunks = [];
+                for (let i = 0; i < text.length; i += 80) chunks.push(text.slice(i, i + 80));
+                return chunks;
+            }
+            return [text];
+        }
+
+        function updateStyle(prop, val) {
+            currentStyle[prop] = val;
+            
+            // UI Updates
+            if (prop === 'fontSize') document.getElementById('fontSizeVal').innerText = val;
+            if (prop === 'padding') document.getElementById('paddingVal').innerText = val;
+            if (prop === 'backgroundOpacity') document.getElementById('bgOpacityVal').innerText = Math.round(val * 100) + '%';
+            
+            // Button State Updates
+            if (prop === 'textAlign') {
+                document.querySelectorAll('.align-h-btn').forEach(b => {
+                    b.dataset.val === val ? b.classList.add('btn-active') : b.classList.remove('btn-active');
+                });
+            }
+            if (prop === 'alignItems') {
+                document.querySelectorAll('.align-v-btn').forEach(b => {
+                    b.dataset.val === val ? b.classList.add('btn-active') : b.classList.remove('btn-active');
+                });
+            }
+
+            renderCards();
+        }
+
+        function handleBgUpload(e, type, index) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const imgData = ev.target.result;
+                    if(type === 'global') {
+                        currentStyle.backgroundImage = imgData;
+                        const preview = document.getElementById('bgPreview');
+                        preview.classList.remove('hidden');
+                        preview.querySelector('img').src = imgData;
+                    } else {
+                        cardSpecificBgs[index] = imgData;
+                    }
+                    renderCards();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function deleteSpecificBg(index) {
+            delete cardSpecificBgs[index];
+            renderCards();
+        }
+
+        function renderCards() {
+            const text = document.getElementById('mainInput').value;
+            const chunks = getChunks(text);
+            const grid = document.getElementById('cardsGrid');
+            grid.innerHTML = '';
+
+            chunks.forEach((chunk, i) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'flex flex-col gap-3 group';
+                
+                const card = document.createElement('div');
+                card.className = 'card-preview rounded-2xl';
+                card.id = `card-${i}`;
+                card.style.backgroundColor = currentStyle.backgroundColor;
+
+                // Background Image Logic
+                const bgOverlay = document.createElement('div');
+                bgOverlay.className = 'absolute inset-0 bg-cover bg-center transition-all mix-blend-multiply';
+                bgOverlay.style.opacity = currentStyle.backgroundOpacity;
+                
+                const specificBg = cardSpecificBgs[i];
+                if(specificBg) {
+                    bgOverlay.style.backgroundImage = `url(${specificBg})`;
+                } else if(currentStyle.backgroundImage !== 'none') {
+                    bgOverlay.style.backgroundImage = `url(${currentStyle.backgroundImage})`;
+                }
+                
+                const content = document.createElement('div');
+                content.className = 'card-content-area relative z-10';
+                content.innerText = chunk;
+                
+                // Apply Styles
+                content.style.fontFamily = currentStyle.fontFamily;
+                content.style.fontSize = currentStyle.fontSize;
+                content.style.color = currentStyle.color;
+                content.style.padding = currentStyle.padding;
+                content.style.textAlign = currentStyle.textAlign;
+                content.style.alignItems = currentStyle.alignItems;
+                content.style.lineHeight = currentStyle.lineHeight;
+                content.style.letterSpacing = currentStyle.letterSpacing;
+                
+                // Logic for distinct Text Clarity
+                const r = parseInt(currentStyle.backgroundColor.slice(1,3), 16);
+                const g = parseInt(currentStyle.backgroundColor.slice(3,5), 16);
+                const b = parseInt(currentStyle.backgroundColor.slice(5,7), 16);
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                content.style.textShadow = brightness > 200 ? 'none' : '0 1px 3px rgba(0,0,0,0.2)';
+
+                // Individual Card Actions
+                const actions = document.createElement('div');
+                actions.className = 'absolute bottom-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity';
+                
+                // Delete button (Only show if specific background exists)
+                if (specificBg) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'card-action-btn btn-delete w-8 h-8 rounded-full flex items-center justify-center shadow-lg';
+                    delBtn.onclick = () => deleteSpecificBg(i);
+                    delBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+                    actions.appendChild(delBtn);
+                }
+
+                // Upload button for specific card
+                const uploadBtn = document.createElement('label');
+                uploadBtn.className = 'card-action-btn w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-lg';
+                uploadBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+                const uploadInput = document.createElement('input');
+                uploadInput.type = 'file';
+                uploadInput.className = 'hidden';
+                uploadInput.onchange = (e) => handleBgUpload(e, 'specific', i);
+                uploadBtn.appendChild(uploadInput);
+                
+                actions.appendChild(uploadBtn);
+
+                card.appendChild(bgOverlay);
+                card.appendChild(content);
+                card.appendChild(actions);
+                
+                const footer = document.createElement('div');
+                footer.className = 'flex justify-between items-center px-2 opacity-50 transition-opacity group-hover:opacity-100';
+                footer.innerHTML = `
+                    <span class="text-[10px] font-black text-green-900 tracking-tighter uppercase italic">Mori Studio</span>
+                    <span class="text-[10px] font-bold text-green-950 bg-white/60 px-2 py-0.5 rounded-full shadow-sm">PAGE ${i+1}</span>
+                `;
+
+                cardWrapper.appendChild(card);
+                cardWrapper.appendChild(footer);
+                grid.appendChild(cardWrapper);
+            });
+        }
+
+        async function downloadAllCards() {
+            const btn = document.getElementById('downloadBtn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="animate-spin">🌀</span> <span>高清渲染中...</span>';
+
+            const cards = document.querySelectorAll('.card-preview');
+            
+            for (let i = 0; i < cards.length; i++) {
+                // Hide action buttons during export
+                const actions = cards[i].querySelector('.group-hover\\:opacity-100');
+                if(actions) actions.style.display = 'none';
+
+                const canvas = await html2canvas(cards[i], {
+                    scale: 3,
+                    useCORS: true,
+                    backgroundColor: currentStyle.backgroundColor,
+                    logging: false
+                });
+                
+                if(actions) actions.style.display = 'flex';
+
+                const link = document.createElement('a');
+                link.download = `text-card-${i+1}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                await new Promise(r => setTimeout(r, 600));
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    </script>
+</body>
+</html>
