@@ -23,7 +23,6 @@
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #81c784; border-radius: 10px; }
         
-        /* Fixed size for card preview */
         .card-preview {
             width: 320px;
             height: 568px;
@@ -32,6 +31,7 @@
             box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
             transition: transform 0.3s ease;
             background-color: white;
+            flex-shrink: 0;
         }
         .card-content-area {
             white-space: pre-wrap;
@@ -95,8 +95,8 @@
         </header>
 
         <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar: Width increased to 384px (w-96) -->
-            <aside class="w-96 glass-panel flex flex-col overflow-y-auto shrink-0 z-20 custom-scrollbar p-6 space-y-7">
+            <!-- Sidebar: Width increased to 35% of the screen -->
+            <aside class="w-[35%] glass-panel flex flex-col overflow-y-auto shrink-0 z-20 custom-scrollbar p-8 space-y-8">
                 
                 <!-- Split Strategy -->
                 <section>
@@ -108,24 +108,24 @@
                     </div>
                 </section>
 
-                <!-- Input Text -->
+                <!-- Input Text: Height increased to over 50% of the viewport height -->
                 <section>
                     <label class="ui-text-label uppercase">内容编辑</label>
                     <textarea 
                         id="mainInput"
                         oninput="handleInput()"
-                        class="w-full h-32 p-4 bg-white shadow-inner rounded-xl text-sm outline-none focus:ring-2 focus:ring-green-700/20 transition-all border border-green-900/5 placeholder:text-stone-300"
+                        class="w-full h-[55vh] p-6 bg-white shadow-inner rounded-2xl text-base outline-none focus:ring-4 focus:ring-green-700/10 transition-all border border-green-900/5 placeholder:text-stone-300 custom-scrollbar resize-none"
                         placeholder="输入文字，系统将根据策略自动生成卡片..."
                     ></textarea>
                 </section>
 
                 <!-- Typography -->
-                <section class="space-y-5">
+                <section class="space-y-6">
                     <label class="ui-text-label uppercase">版面控制</label>
                     
                     <div>
                         <span class="text-[10px] text-green-800/60 font-bold block mb-2">艺术字体</span>
-                        <select onchange="updateStyle('fontFamily', this.value)" class="w-full bg-white p-2.5 rounded-xl border border-green-900/10 text-xs outline-none cursor-pointer shadow-sm">
+                        <select onchange="updateStyle('fontFamily', this.value)" class="w-full bg-white p-3 rounded-xl border border-green-900/10 text-sm outline-none cursor-pointer shadow-sm">
                             <option value="sans-serif">简约黑体 (Modern)</option>
                             <option value="'Noto Serif SC', serif" selected>温柔宋体 (Serif)</option>
                             <option value="'Ma Shan Zheng', cursive">治愈楷体 (Script)</option>
@@ -134,74 +134,61 @@
                         </select>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-6">
                         <div>
                             <div class="flex justify-between text-[10px] font-bold text-green-900/70 mb-2">
                                 <span>字号</span>
                                 <span id="fontSizeVal">24px</span>
                             </div>
-                            <input type="range" min="12" max="100" value="24" oninput="updateStyle('fontSize', this.value + 'px')" class="w-full h-1 bg-green-200 rounded-lg appearance-none">
+                            <input type="range" min="12" max="100" value="24" oninput="updateStyle('fontSize', this.value + 'px')" class="w-full h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer">
                         </div>
                         <div>
                             <div class="flex justify-between text-[10px] font-bold text-green-900/70 mb-2">
                                 <span>边距</span>
                                 <span id="paddingVal">40px</span>
                             </div>
-                            <input type="range" min="0" max="120" value="40" oninput="updateStyle('padding', this.value + 'px')" class="w-full h-1 bg-green-200 rounded-lg appearance-none">
+                            <input type="range" min="0" max="120" value="40" oninput="updateStyle('padding', this.value + 'px')" class="w-full h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer">
                         </div>
                     </div>
 
-                    <!-- Alignment Controls -->
-                    <div class="space-y-3">
-                        <span class="text-[10px] text-green-800/60 font-bold block">水平与垂直对齐</span>
-                        <div class="flex gap-1 bg-green-900/10 p-1 rounded-xl border border-green-900/5">
-                            <button onclick="updateStyle('textAlign', 'left')" class="align-h-btn flex-1 py-2 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="left"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 10H3M21 6H3M21 14H3M17 18H3"/></svg></button>
-                            <button onclick="updateStyle('textAlign', 'center')" class="align-h-btn btn-active flex-1 py-2 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 10H6M21 6H3M21 14H3M18 18H6"/></svg></button>
-                            <button onclick="updateStyle('textAlign', 'right')" class="align-h-btn flex-1 py-2 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="right"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg></button>
-                        </div>
-                        <div class="flex gap-1 bg-green-900/10 p-1 rounded-xl border border-green-900/5">
-                            <button onclick="updateStyle('alignItems', 'flex-start')" class="align-v-btn flex-1 py-2 flex flex-col items-center gap-1 hover:bg-white rounded-lg transition-all text-green-900/30" data-val="flex-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m4 6 16 0M4 10h12M4 14h8"/></svg><span class="text-[8px] font-bold">置顶</span></button>
-                            <button onclick="updateStyle('alignItems', 'center')" class="align-v-btn btn-active flex-1 py-2 flex flex-col items-center gap-1 hover:bg-white rounded-lg transition-all text-green-900/30" data-val="center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12h16M8 8h8M10 16h4"/></svg><span class="text-[8px] font-bold">居中</span></button>
-                            <button onclick="updateStyle('alignItems', 'flex-end')" class="align-v-btn flex-1 py-2 flex flex-col items-center gap-1 hover:bg-white rounded-lg transition-all text-green-900/30" data-val="flex-end"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 18h16M8 14h12M12 10h8"/></svg><span class="text-[8px] font-bold">置底</span></button>
+                    <!-- Alignment -->
+                    <div class="space-y-4">
+                        <span class="text-[10px] text-green-800/60 font-bold block">对齐方式</span>
+                        <div class="flex gap-2 bg-green-900/10 p-1.5 rounded-xl border border-green-900/5">
+                            <button onclick="updateStyle('textAlign', 'left')" class="align-h-btn flex-1 py-2.5 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 10H3M21 6H3M21 14H3M17 18H3"/></svg></button>
+                            <button onclick="updateStyle('textAlign', 'center')" class="align-h-btn btn-active flex-1 py-2.5 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 10H6M21 6H3M21 14H3M18 18H6"/></svg></button>
+                            <button onclick="updateStyle('textAlign', 'right')" class="align-h-btn flex-1 py-2.5 flex justify-center hover:bg-white rounded-lg transition-all text-green-900/30" data-val="right"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg></button>
                         </div>
                     </div>
                 </section>
 
-                <!-- Background -->
-                <section class="pb-10 space-y-4">
-                    <label class="ui-text-label uppercase">全局色彩与纹理</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="p-3 bg-white rounded-xl border border-green-900/5 shadow-sm">
-                            <span class="text-[9px] font-black text-green-800/40 block mb-1">文字颜色</span>
-                            <input type="color" value="#1a202c" oninput="updateStyle('color', this.value)" class="w-full h-6 rounded cursor-pointer border-none bg-transparent">
+                <!-- Colors & Global BG -->
+                <section class="pb-12 space-y-6">
+                    <label class="ui-text-label uppercase">全局外观</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-white rounded-xl border border-green-900/5 shadow-sm">
+                            <span class="text-[9px] font-black text-green-800/40 block mb-2">文字颜色</span>
+                            <input type="color" value="#1a202c" oninput="updateStyle('color', this.value)" class="w-full h-8 rounded cursor-pointer border-none bg-transparent">
                         </div>
-                        <div class="p-3 bg-white rounded-xl border border-green-900/5 shadow-sm">
-                            <span class="text-[9px] font-black text-green-800/40 block mb-1">卡片底色</span>
-                            <input type="color" value="#ffffff" oninput="updateStyle('backgroundColor', this.value)" class="w-full h-6 rounded cursor-pointer border-none bg-transparent">
+                        <div class="p-4 bg-white rounded-xl border border-green-900/5 shadow-sm">
+                            <span class="text-[9px] font-black text-green-800/40 block mb-2">卡片底色</span>
+                            <input type="color" value="#ffffff" oninput="updateStyle('backgroundColor', this.value)" class="w-full h-8 rounded cursor-pointer border-none bg-transparent">
                         </div>
                     </div>
                     
-                    <div class="space-y-2 p-3 bg-white rounded-xl border border-green-900/5 shadow-sm">
-                        <div class="flex justify-between text-[10px] font-bold text-green-900/70">
-                            <span>全局底图不透明度</span>
-                            <span id="bgOpacityVal">40%</span>
-                        </div>
-                        <input type="range" min="0" max="100" value="40" oninput="updateStyle('backgroundOpacity', this.value / 100)" class="w-full h-1 bg-green-200 rounded-lg appearance-none">
-                    </div>
-
-                    <div class="relative group h-24 rounded-2xl border-2 border-dashed border-green-300/50 bg-white/40 flex flex-col items-center justify-center hover:bg-white/80 cursor-pointer overflow-hidden transition-all">
-                        <svg class="opacity-40 text-green-800" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                        <span class="text-[10px] font-bold mt-2 text-green-900/60">上传默认底图</span>
+                    <div class="relative group h-28 rounded-2xl border-2 border-dashed border-green-300/50 bg-white/40 flex flex-col items-center justify-center hover:bg-white/80 cursor-pointer overflow-hidden transition-all">
+                        <svg class="opacity-40 text-green-800" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        <span class="text-[11px] font-bold mt-2 text-green-900/60">上传全局默认底图</span>
                         <input type="file" onchange="handleBgUpload(event, 'global')" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
                         <div id="bgPreview" class="absolute inset-0 hidden"><img class="w-full h-full object-cover"></div>
                     </div>
                 </section>
             </aside>
 
-            <!-- Main Preview: Cards are fixed size and centered in grid -->
-            <main class="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
-                <div id="cardsGrid" class="flex flex-wrap gap-10 pb-40 justify-center">
-                    <!-- Cards will be injected here -->
+            <!-- Main Preview Area -->
+            <main class="flex-1 p-12 overflow-y-auto custom-scrollbar bg-green-50/20">
+                <div id="cardsGrid" class="flex flex-wrap gap-12 pb-48 justify-center items-start">
+                    <!-- Cards injected here -->
                 </div>
             </main>
         </div>
@@ -224,7 +211,7 @@
             backgroundOpacity: 0.4
         };
 
-        const defaultText = "森卡 (Mori Card)\n---\n布局优化更新。\n\n左侧控制栏已加宽，\n右侧卡片尺寸已固定（320×568）。\n---\n这种固定比例确保了\n导出的图片在手机端浏览时\n具有完美的视觉比例。";
+        const defaultText = "森卡 (Mori Card)\n---\n这里是超大编辑区。\n\n现在的侧边栏占据了屏幕 35% 的宽度，\n文字输入框占据了 55% 的垂直高度。\n---\n更多的空间意味着更顺滑的创作体验。\n您可以一次性贴入长文，\n然后通过符号快速切割。";
         
         window.onload = () => {
             document.getElementById('mainInput').value = defaultText;
@@ -234,8 +221,7 @@
         function setSplitMode(mode) {
             splitMode = mode;
             document.querySelectorAll('.mode-btn').forEach(btn => {
-                if(btn.dataset.mode === mode) btn.classList.add('btn-active');
-                else btn.classList.remove('btn-active');
+                btn.dataset.mode === mode ? btn.classList.add('btn-active') : btn.classList.remove('btn-active');
             });
             renderCards();
         }
@@ -250,7 +236,7 @@
             if (splitMode === 'newline') return text.split('\n').map(s => s.trim()).filter(s => s !== '');
             if (splitMode === 'length') {
                 const chunks = [];
-                for (let i = 0; i < text.length; i += 80) chunks.push(text.slice(i, i + 80));
+                for (let i = 0; i < text.length; i += 120) chunks.push(text.slice(i, i + 120));
                 return chunks;
             }
             return [text];
@@ -260,15 +246,9 @@
             currentStyle[prop] = val;
             if (prop === 'fontSize') document.getElementById('fontSizeVal').innerText = val;
             if (prop === 'padding') document.getElementById('paddingVal').innerText = val;
-            if (prop === 'backgroundOpacity') document.getElementById('bgOpacityVal').innerText = Math.round(val * 100) + '%';
             
             if (prop === 'textAlign') {
                 document.querySelectorAll('.align-h-btn').forEach(b => {
-                    b.dataset.val === val ? b.classList.add('btn-active') : b.classList.remove('btn-active');
-                });
-            }
-            if (prop === 'alignItems') {
-                document.querySelectorAll('.align-v-btn').forEach(b => {
                     b.dataset.val === val ? b.classList.add('btn-active') : b.classList.remove('btn-active');
                 });
             }
@@ -308,10 +288,10 @@
 
             chunks.forEach((chunk, i) => {
                 const cardWrapper = document.createElement('div');
-                cardWrapper.className = 'flex flex-col gap-3 group';
+                cardWrapper.className = 'flex flex-col gap-4 group';
                 
                 const card = document.createElement('div');
-                card.className = 'card-preview rounded-2xl';
+                card.className = 'card-preview rounded-3xl';
                 card.id = `card-${i}`;
                 card.style.backgroundColor = currentStyle.backgroundColor;
 
@@ -345,19 +325,19 @@
                 content.style.textShadow = brightness > 200 ? 'none' : '0 1px 3px rgba(0,0,0,0.2)';
 
                 const actions = document.createElement('div');
-                actions.className = 'absolute bottom-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity';
+                actions.className = 'absolute bottom-6 right-6 z-20 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity';
                 
                 if (specificBg) {
                     const delBtn = document.createElement('button');
-                    delBtn.className = 'card-action-btn btn-delete w-8 h-8 rounded-full flex items-center justify-center shadow-lg';
+                    delBtn.className = 'card-action-btn btn-delete w-10 h-10 rounded-full flex items-center justify-center shadow-xl';
                     delBtn.onclick = () => deleteSpecificBg(i);
-                    delBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+                    delBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
                     actions.appendChild(delBtn);
                 }
 
                 const uploadBtn = document.createElement('label');
-                uploadBtn.className = 'card-action-btn w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-lg';
-                uploadBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+                uploadBtn.className = 'card-action-btn w-10 h-10 rounded-full flex items-center justify-center cursor-pointer shadow-xl';
+                uploadBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
                 const uploadInput = document.createElement('input');
                 uploadInput.type = 'file';
                 uploadInput.className = 'hidden';
@@ -370,11 +350,11 @@
                 card.appendChild(actions);
                 
                 const footer = document.createElement('div');
-                footer.className = 'flex justify-between items-center px-2 opacity-50 transition-opacity group-hover:opacity-100';
+                footer.className = 'flex justify-between items-center px-4 opacity-40 transition-opacity group-hover:opacity-100';
                 footer.style.width = '320px';
                 footer.innerHTML = `
-                    <span class="text-[10px] font-black text-green-900 tracking-tighter uppercase italic">Mori Studio</span>
-                    <span class="text-[10px] font-bold text-green-950 bg-white/60 px-2 py-0.5 rounded-full shadow-sm">PAGE ${i+1}</span>
+                    <span class="text-[11px] font-black text-green-900 tracking-tighter uppercase italic">Mori Studio</span>
+                    <span class="text-[11px] font-bold text-green-950 bg-white/60 px-3 py-1 rounded-full shadow-sm">PAGE ${i+1}</span>
                 `;
 
                 cardWrapper.appendChild(card);
@@ -387,7 +367,7 @@
             const btn = document.getElementById('downloadBtn');
             const originalHTML = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<span class="animate-spin">🌀</span> <span>高清渲染中...</span>';
+            btn.innerHTML = '<span class="animate-spin">🌀</span> <span>导出中...</span>';
 
             const cards = document.querySelectorAll('.card-preview');
             for (let i = 0; i < cards.length; i++) {
