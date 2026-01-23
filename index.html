@@ -157,7 +157,7 @@ export default function CardSplitterApp() {
           });
           
           canvas.toBlob((blob) => {
-            downloadImage(blob, `mori_card_${i + 1}.png`);
+            downloadImage(blob, `text_card_${i + 1}.png`);
           }, "image/png");
           
           await new Promise(resolve => setTimeout(resolve, 400));
@@ -443,7 +443,7 @@ export default function CardSplitterApp() {
                   </div>
 
                   <div className="mt-4 flex items-center justify-between px-2 opacity-40">
-                    <span className="text-[10px] font-bold tracking-tighter text-green-900 uppercase italic">Mori Card Series</span>
+                    <span className="text-[10px] font-bold tracking-tighter text-green-900 uppercase italic">Text Card Series</span>
                     <span className="text-[10px] font-bold text-green-950">NO.{index + 1}</span>
                   </div>
                 </div>
