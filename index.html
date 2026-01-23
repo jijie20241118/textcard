@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Card - 极简文字卡片切分器</title>
+    <title>Mori Card - 极简文字卡片切分器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@200;400;700&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&family=Inter:wght@200;400&display=swap" rel="stylesheet">
@@ -23,13 +23,15 @@
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #81c784; border-radius: 10px; }
         
+        /* Fixed size for card preview */
         .card-preview {
-            aspect-ratio: 9/16;
-            width: 100%;
+            width: 320px;
+            height: 568px;
             position: relative;
             overflow: hidden;
             box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
             transition: transform 0.3s ease;
+            background-color: white;
         }
         .card-content-area {
             white-space: pre-wrap;
@@ -82,8 +84,8 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7A7.1 7.1 0 1 1 5 13.1"/><path d="m7 21 7.9-6.3"/><path d="m11 21 4.7-9.4"/><path d="m14 21 2.1-4.2"/></svg>
                 </div>
                 <div class="flex flex-col">
-                    <span class="text-sm font-black tracking-widest text-green-900 leading-none">TEXT CARD</span>
-                    <span class="text-[9px] font-bold tracking-[0.25em] text-green-700/70 uppercase">Find Yourself</span>
+                    <span class="text-sm font-black tracking-widest text-green-900 leading-none">MORI CARD</span>
+                    <span class="text-[9px] font-bold tracking-[0.25em] text-green-700/70 uppercase">Forest Aesthetic</span>
                 </div>
             </div>
             <button onclick="downloadAllCards()" id="downloadBtn" class="flex items-center gap-2 px-6 py-2.5 bg-green-800 text-white rounded-full text-xs font-bold shadow-lg hover:bg-green-900 active:scale-95 transition-all">
@@ -93,8 +95,8 @@
         </header>
 
         <div class="flex flex-1 overflow-hidden">
-            <!-- Sidebar -->
-            <aside class="w-80 glass-panel flex flex-col overflow-y-auto shrink-0 z-20 custom-scrollbar p-6 space-y-7">
+            <!-- Sidebar: Width increased to 384px (w-96) -->
+            <aside class="w-96 glass-panel flex flex-col overflow-y-auto shrink-0 z-20 custom-scrollbar p-6 space-y-7">
                 
                 <!-- Split Strategy -->
                 <section>
@@ -196,9 +198,9 @@
                 </section>
             </aside>
 
-            <!-- Main Preview -->
+            <!-- Main Preview: Cards are fixed size and centered in grid -->
             <main class="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
-                <div id="cardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 pb-40">
+                <div id="cardsGrid" class="flex flex-wrap gap-10 pb-40 justify-center">
                     <!-- Cards will be injected here -->
                 </div>
             </main>
@@ -207,7 +209,7 @@
 
     <script>
         let splitMode = 'separator';
-        let cardSpecificBgs = {}; // Store custom background for specific card index
+        let cardSpecificBgs = {}; 
         let currentStyle = {
             fontFamily: "'Noto Serif SC', serif",
             fontSize: '24px',
@@ -222,7 +224,7 @@
             backgroundOpacity: 0.4
         };
 
-        const defaultText = "文字卡片 (Text Card)\n---\n可按照符号、行、字数拆分。\n\n点击卡片右下角的图片按钮上传底图，\n点击红色垃圾桶图标即可删除。";
+        const defaultText = "森卡 (Mori Card)\n---\n布局优化更新。\n\n左侧控制栏已加宽，\n右侧卡片尺寸已固定（320×568）。\n---\n这种固定比例确保了\n导出的图片在手机端浏览时\n具有完美的视觉比例。";
         
         window.onload = () => {
             document.getElementById('mainInput').value = defaultText;
@@ -256,13 +258,10 @@
 
         function updateStyle(prop, val) {
             currentStyle[prop] = val;
-            
-            // UI Updates
             if (prop === 'fontSize') document.getElementById('fontSizeVal').innerText = val;
             if (prop === 'padding') document.getElementById('paddingVal').innerText = val;
             if (prop === 'backgroundOpacity') document.getElementById('bgOpacityVal').innerText = Math.round(val * 100) + '%';
             
-            // Button State Updates
             if (prop === 'textAlign') {
                 document.querySelectorAll('.align-h-btn').forEach(b => {
                     b.dataset.val === val ? b.classList.add('btn-active') : b.classList.remove('btn-active');
@@ -273,7 +272,6 @@
                     b.dataset.val === val ? b.classList.add('btn-active') : b.classList.remove('btn-active');
                 });
             }
-
             renderCards();
         }
 
@@ -317,7 +315,6 @@
                 card.id = `card-${i}`;
                 card.style.backgroundColor = currentStyle.backgroundColor;
 
-                // Background Image Logic
                 const bgOverlay = document.createElement('div');
                 bgOverlay.className = 'absolute inset-0 bg-cover bg-center transition-all mix-blend-multiply';
                 bgOverlay.style.opacity = currentStyle.backgroundOpacity;
@@ -333,7 +330,6 @@
                 content.className = 'card-content-area relative z-10';
                 content.innerText = chunk;
                 
-                // Apply Styles
                 content.style.fontFamily = currentStyle.fontFamily;
                 content.style.fontSize = currentStyle.fontSize;
                 content.style.color = currentStyle.color;
@@ -341,20 +337,16 @@
                 content.style.textAlign = currentStyle.textAlign;
                 content.style.alignItems = currentStyle.alignItems;
                 content.style.lineHeight = currentStyle.lineHeight;
-                content.style.letterSpacing = currentStyle.letterSpacing;
                 
-                // Logic for distinct Text Clarity
                 const r = parseInt(currentStyle.backgroundColor.slice(1,3), 16);
                 const g = parseInt(currentStyle.backgroundColor.slice(3,5), 16);
                 const b = parseInt(currentStyle.backgroundColor.slice(5,7), 16);
                 const brightness = (r * 299 + g * 587 + b * 114) / 1000;
                 content.style.textShadow = brightness > 200 ? 'none' : '0 1px 3px rgba(0,0,0,0.2)';
 
-                // Individual Card Actions
                 const actions = document.createElement('div');
                 actions.className = 'absolute bottom-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity';
                 
-                // Delete button (Only show if specific background exists)
                 if (specificBg) {
                     const delBtn = document.createElement('button');
                     delBtn.className = 'card-action-btn btn-delete w-8 h-8 rounded-full flex items-center justify-center shadow-lg';
@@ -363,7 +355,6 @@
                     actions.appendChild(delBtn);
                 }
 
-                // Upload button for specific card
                 const uploadBtn = document.createElement('label');
                 uploadBtn.className = 'card-action-btn w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-lg';
                 uploadBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#166534" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
@@ -372,7 +363,6 @@
                 uploadInput.className = 'hidden';
                 uploadInput.onchange = (e) => handleBgUpload(e, 'specific', i);
                 uploadBtn.appendChild(uploadInput);
-                
                 actions.appendChild(uploadBtn);
 
                 card.appendChild(bgOverlay);
@@ -381,6 +371,7 @@
                 
                 const footer = document.createElement('div');
                 footer.className = 'flex justify-between items-center px-2 opacity-50 transition-opacity group-hover:opacity-100';
+                footer.style.width = '320px';
                 footer.innerHTML = `
                     <span class="text-[10px] font-black text-green-900 tracking-tighter uppercase italic">Mori Studio</span>
                     <span class="text-[10px] font-bold text-green-950 bg-white/60 px-2 py-0.5 rounded-full shadow-sm">PAGE ${i+1}</span>
@@ -399,9 +390,7 @@
             btn.innerHTML = '<span class="animate-spin">🌀</span> <span>高清渲染中...</span>';
 
             const cards = document.querySelectorAll('.card-preview');
-            
             for (let i = 0; i < cards.length; i++) {
-                // Hide action buttons during export
                 const actions = cards[i].querySelector('.group-hover\\:opacity-100');
                 if(actions) actions.style.display = 'none';
 
@@ -409,18 +398,19 @@
                     scale: 3,
                     useCORS: true,
                     backgroundColor: currentStyle.backgroundColor,
-                    logging: false
+                    logging: false,
+                    width: 320,
+                    height: 568
                 });
                 
                 if(actions) actions.style.display = 'flex';
 
                 const link = document.createElement('a');
-                link.download = `text-card-${i+1}.png`;
+                link.download = `mori-card-${i+1}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 await new Promise(r => setTimeout(r, 600));
             }
-
             btn.disabled = false;
             btn.innerHTML = originalHTML;
         }
