@@ -1,0 +1,464 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  Type, 
+  Image as ImageIcon, 
+  Download, 
+  Split, 
+  Trash2, 
+  Plus,
+  Upload,
+  X,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignVerticalJustifyStart,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  Layers,
+  Wind,
+  Framer,
+  ScrollText,
+  RefreshCw
+} from 'lucide-react';
+
+// 动态加载外部库
+const useScript = (src) => {
+  const [status, setStatus] = useState(src ? 'loading' : 'idle');
+  useEffect(() => {
+    if (!src) return;
+    let script = document.querySelector(`script[src="${src}"]`);
+    if (!script) {
+      script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.setAttribute('data-status', 'loading');
+      document.body.appendChild(script);
+      const setAttributeFromEvent = (event) => {
+        script.setAttribute('data-status', event.type === 'load' ? 'ready' : 'error');
+        setStatus(event.type === 'load' ? 'ready' : 'error');
+      };
+      script.addEventListener('load', setAttributeFromEvent);
+      script.addEventListener('error', setAttributeFromEvent);
+    } else {
+      setStatus(script.getAttribute('data-status'));
+    }
+  }, [src]);
+  return status;
+};
+
+const FONT_OPTIONS = [
+  { name: '灵感黑体', value: 'sans-serif' },
+  { name: '温柔宋体', value: '"Noto Serif SC", serif' },
+  { name: '治愈楷体', value: '"Ma Shan Zheng", cursive' },
+  { name: '童趣圆体', value: '"ZCOOL KuaiLe", cursive' },
+  { name: '诗意手写', value: '"ZCOOL XiaoWei", serif' },
+  { name: '简约无衬线', value: '"Inter", system-ui' },
+];
+
+export default function CardSplitterApp() {
+  const html2canvasStatus = useScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+
+  const [inputText, setInputText] = useState("");
+  const [cards, setCards] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [activeSplitMode, setActiveSplitMode] = useState('separator'); 
+  const cardRefs = useRef({});
+  const fileInputRef = useRef(null);
+  const [currentUploadId, setCurrentUploadId] = useState(null);
+
+  const [styleSettings, setStyleSettings] = useState({
+    fontFamily: '"Noto Serif SC", serif',
+    fontSize: 24,
+    textColor: '#1a202c', 
+    bgColor: '#f0f4f1', 
+    bgImage: null,
+    bgOpacity: 100,
+    textAlign: 'center',
+    verticalAlign: 'center',
+    padding: 12,
+    lineHeight: 1.4,
+    letterSpacing: 0 // 改为数值
+  });
+
+  const getChunks = (text, mode) => {
+    if (!text.trim()) return [];
+    if (mode === 'separator') return text.split('---').map(s => s.trim()).filter(s => s !== '');
+    if (mode === 'newline') return text.split('\n').map(s => s.trim()).filter(s => s !== '');
+    if (mode === 'length') {
+      const limit = 80;
+      const res = [];
+      for (let i = 0; i < text.length; i += limit) res.push(text.slice(i, i + limit));
+      return res;
+    }
+    return [text];
+  };
+
+  useEffect(() => {
+    if (inputText.trim()) {
+      const chunks = getChunks(inputText, activeSplitMode);
+      setCards(chunks.map((text, i) => ({
+        id: `card-${i}-${activeSplitMode}-${Date.now()}`,
+        text: text,
+        customBg: cards[i]?.customBg || null 
+      })));
+    }
+  }, [inputText, activeSplitMode]);
+
+  useEffect(() => {
+    if (cards.length === 0 && !inputText) {
+      setCards([{ id: 'welcome', text: "此处为实时预览区。\n您可以从左侧侧边栏编辑文字。\n通过减少内边距和调整字号，\n可以让每一行容纳更多的内容，\n并且让排版紧贴卡片边缘。", customBg: null }]);
+    }
+  }, []);
+
+  const triggerUpload = (id) => {
+    setCurrentUploadId(id);
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+
+  const handleCardImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && currentUploadId) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setCards(prevCards => 
+          prevCards.map(c => c.id === currentUploadId ? { ...c, customBg: ev.target.result } : c)
+        );
+      };
+      reader.readAsDataURL(file);
+      e.target.value = null;
+    }
+  };
+
+  const downloadImage = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadAll = async () => {
+    if (html2canvasStatus !== 'ready') return;
+    setIsGenerating(true);
+
+    try {
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const element = cardRefs.current[card.id];
+        if (element) {
+          const canvas = await window.html2canvas(element, { 
+            scale: 3, 
+            useCORS: true,
+            backgroundColor: styleSettings.bgColor,
+            logging: false
+          });
+          
+          canvas.toBlob((blob) => {
+            downloadImage(blob, `mori_card_${i + 1}.png`);
+          }, "image/png");
+          
+          await new Promise(resolve => setTimeout(resolve, 400));
+        }
+      }
+    } catch (e) { console.error(e); }
+    setIsGenerating(false);
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-[#f1f5f2] text-[#1a202c] font-sans overflow-hidden">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@200;400;700&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&family=Inter:wght@200;400&display=swap');
+        
+        .forest-gradient {
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: linear-gradient(135deg, #e1f0e3 0%, #c1e0c2 50%, #ecf5e6 100%);
+          z-index: -1;
+        }
+
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(40px);
+          border-right: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #81c784; border-radius: 10px; }
+        
+        .ui-label {
+          font-size: 0.95rem; 
+          font-weight: 700; 
+          color: #2e4a36; 
+          letter-spacing: 0.05em;
+          margin-bottom: 0.85rem;
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+
+        select, textarea, input[type="text"], input[type="number"] {
+          font-size: 1rem !important;
+          border: 1.5px solid rgba(46, 74, 54, 0.1) !important;
+          color: #1a202c !important;
+          font-weight: 500;
+        }
+
+        select:focus, textarea:focus, input:focus {
+          border-color: #4a7c59 !important;
+          background: white !important;
+        }
+
+        .card-content-area {
+          white-space: pre-wrap;
+          word-break: break-all;
+          user-select: none;
+          width: 100%;
+          display: block;
+        }
+      `}</style>
+
+      <div className="forest-gradient"></div>
+
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleCardImageUpload} 
+        accept="image/*" 
+        className="hidden" 
+      />
+
+      <header className="h-20 px-8 flex items-center justify-between z-30 shrink-0 border-b border-white/30 bg-white/10 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          <div className="p-2.5 bg-white shadow-sm rounded-xl text-green-700">
+            <Wind size={22} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-bold tracking-widest text-green-900">MORI CARD</span>
+            <span className="text-[10px] font-bold tracking-[0.3em] text-green-700/60 uppercase">Maximum Space Util.</span>
+          </div>
+        </div>
+        <button 
+          onClick={handleDownloadAll}
+          disabled={isGenerating}
+          className="flex items-center gap-2 px-8 py-3 bg-green-800 text-white rounded-full text-sm font-bold transition-all hover:bg-green-900 hover:shadow-lg active:scale-95 disabled:bg-stone-400"
+        >
+          {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Download size={18} />}
+          {isGenerating ? '导出中...' : '批量导出高清图'}
+        </button>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        
+        <aside className="w-[22rem] glass-panel flex flex-col overflow-y-auto shrink-0 z-20 custom-scrollbar p-8 space-y-10">
+          
+          <section>
+            <h3 className="ui-label"><Split size={16}/> 拆分策略</h3>
+            <div className="grid grid-cols-3 gap-2 p-1.5 bg-green-200/20 rounded-xl border border-green-200/30">
+              {[
+                { id: 'separator', label: '符号' },
+                { id: 'newline', label: '换行' },
+                { id: 'length', label: '字数' },
+              ].map(mode => (
+                <button 
+                  key={mode.id}
+                  onClick={() => setActiveSplitMode(mode.id)}
+                  className={`py-2 rounded-lg text-xs transition-all ${
+                    activeSplitMode === mode.id ? 'bg-white shadow-sm text-green-800 font-bold' : 'text-green-900/40 hover:text-green-800'
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="ui-label"><ScrollText size={16}/> 文字碎片</h3>
+            <textarea
+              className="w-full h-40 p-4 bg-white/50 rounded-2xl text-sm outline-none focus:bg-white transition-all border border-white/50 placeholder:text-green-900/20"
+              placeholder="内容在此处编辑，使用 --- 分页"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+            />
+          </section>
+
+          <section className="space-y-8">
+            <h3 className="ui-label"><Framer size={16}/> 风格渲染</h3>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-green-800/50 uppercase ml-1">选择字体</label>
+              <select 
+                value={styleSettings.fontFamily}
+                onChange={(e) => setStyleSettings({...styleSettings, fontFamily: e.target.value})}
+                className="w-full bg-white/70 p-3 rounded-xl border text-sm outline-none cursor-pointer appearance-none"
+              >
+                {FONT_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-6">
+               <div>
+                <div className="flex justify-between items-center mb-3 px-1 text-xs font-bold text-green-900/70">
+                  <span>文字大小</span>
+                  <span className="bg-green-100 px-2 py-0.5 rounded text-[10px]">{styleSettings.fontSize}px</span>
+                </div>
+                <input type="range" min="10" max="100" value={styleSettings.fontSize} onChange={(e) => setStyleSettings({...styleSettings, fontSize: parseInt(e.target.value)})} className="w-full accent-green-700 h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer" />
+              </div>
+
+               <div>
+                <div className="flex justify-between items-center mb-3 px-1 text-xs font-bold text-green-900/70">
+                  <span>边界留白 (Padding)</span>
+                  <span className="bg-green-100 px-2 py-0.5 rounded text-[10px]">{styleSettings.padding}px</span>
+                </div>
+                <input type="range" min="0" max="150" value={styleSettings.padding} onChange={(e) => setStyleSettings({...styleSettings, padding: parseInt(e.target.value)})} className="w-full accent-green-700 h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/40 p-3 rounded-xl border border-green-200/30">
+                   <label className="text-[10px] font-bold text-green-800/40 uppercase block mb-2">行高</label>
+                   <input type="number" step="0.1" min="1" max="4" value={styleSettings.lineHeight} onChange={(e)=>setStyleSettings({...styleSettings, lineHeight: parseFloat(e.target.value)})} className="w-full bg-transparent text-sm outline-none" />
+                </div>
+                <div className="bg-white/40 p-3 rounded-xl border border-green-200/30">
+                   <label className="text-[10px] font-bold text-green-800/40 uppercase block mb-2">字距 (em)</label>
+                   <input type="number" step="0.01" min="-0.5" max="1" value={styleSettings.letterSpacing} onChange={(e)=>setStyleSettings({...styleSettings, letterSpacing: parseFloat(e.target.value)})} className="w-full bg-transparent text-sm outline-none" />
+                </div>
+              </div>
+
+              <div className="flex bg-green-200/10 p-1.5 rounded-xl border border-green-200/20">
+                {['left', 'center', 'right'].map(align => (
+                  <button key={align} onClick={() => setStyleSettings({...styleSettings, textAlign: align})} className={`flex-1 flex justify-center py-2.5 rounded-lg transition-all ${styleSettings.textAlign === align ? 'bg-white shadow-sm text-green-800' : 'text-green-900/20'}`}>
+                    {align === 'left' ? <AlignLeft size={16}/> : align === 'center' ? <AlignCenter size={16}/> : <AlignRight size={16}/>}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="flex bg-green-200/10 p-1.5 rounded-xl border border-green-200/20">
+                {['top', 'center', 'bottom'].map(valign => (
+                  <button key={valign} onClick={() => setStyleSettings({...styleSettings, verticalAlign: valign})} className={`flex-1 flex justify-center py-2.5 rounded-lg transition-all ${styleSettings.verticalAlign === valign ? 'bg-white shadow-sm text-green-800' : 'text-green-900/20'}`}>
+                    {valign === 'top' ? <AlignVerticalJustifyStart size={16}/> : valign === 'center' ? <AlignVerticalJustifyCenter size={16}/> : <AlignVerticalJustifyEnd size={16}/>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="pb-10">
+            <h3 className="ui-label"><ImageIcon size={16}/> 背景</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-white/60 rounded-xl border border-green-200/30">
+                <span className="text-[10px] font-bold text-green-800/40 uppercase block mb-2">文字色</span>
+                <input type="color" value={styleSettings.textColor} onChange={(e) => setStyleSettings({...styleSettings, textColor: e.target.value})} className="w-full h-6 rounded cursor-pointer" />
+              </div>
+              <div className="p-3 bg-white/60 rounded-xl border border-green-200/30">
+                <span className="text-[10px] font-bold text-green-800/40 uppercase block mb-2">背景色</span>
+                <input type="color" value={styleSettings.bgColor} onChange={(e) => setStyleSettings({...styleSettings, bgColor: e.target.value})} className="w-full h-6 rounded cursor-pointer" />
+              </div>
+            </div>
+            <div className="mt-4 relative group w-full h-24 rounded-2xl border-2 border-dashed border-green-300/50 flex items-center justify-center hover:bg-white/60 transition-all cursor-pointer overflow-hidden">
+               {styleSettings.bgImage ? (
+                <img src={styleSettings.bgImage} className="w-full h-full object-cover" alt="BG" />
+              ) : (
+                <div className="flex flex-col items-center opacity-40">
+                  <Upload size={20} />
+                  <span className="text-[10px] font-bold mt-1">全局底图</span>
+                </div>
+              )}
+              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
+                const f = e.target.files[0];
+                if(f) {
+                  const r = new FileReader();
+                  r.onload = (ev) => setStyleSettings(s => ({...s, bgImage: ev.target.result}));
+                  r.readAsDataURL(f);
+                }
+              }} />
+            </div>
+          </section>
+        </aside>
+
+        <main className="flex-1 p-8 md:p-16 overflow-y-auto custom-scrollbar">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 pb-40">
+              {cards.map((card, index) => (
+                <div key={card.id} className="group relative">
+                  
+                  {/* Card Main Container */}
+                  <div 
+                    ref={el => cardRefs.current[card.id] = el}
+                    className="relative w-full aspect-[9/16] rounded-xl overflow-hidden shadow-2xl transition-all duration-700 bg-white"
+                    style={{ backgroundColor: styleSettings.bgColor }}
+                  >
+                    {/* Background Layer */}
+                    {(card.customBg || styleSettings.bgImage) && (
+                      <div 
+                        className="absolute inset-0 z-0 bg-cover bg-center" 
+                        style={{ 
+                          backgroundImage: `url(${card.customBg || styleSettings.bgImage})`,
+                          opacity: card.customBg ? 1 : (styleSettings.bgOpacity / 100)
+                        }} 
+                      />
+                    )}
+
+                    {/* Content Container - Compact Logic */}
+                    <div 
+                      className={`relative z-10 w-full h-full flex transition-all duration-500 ${
+                        styleSettings.verticalAlign === 'top' ? 'items-start' : 
+                        styleSettings.verticalAlign === 'bottom' ? 'items-end' : 'items-center'
+                      }`}
+                      style={{ padding: `${styleSettings.padding}px` }}
+                    >
+                      <div
+                        className="card-content-area"
+                        style={{
+                          fontFamily: styleSettings.fontFamily,
+                          fontSize: `${styleSettings.fontSize}px`,
+                          color: styleSettings.textColor,
+                          textAlign: styleSettings.textAlign,
+                          lineHeight: styleSettings.lineHeight,
+                          letterSpacing: `${styleSettings.letterSpacing}em`,
+                          textShadow: styleSettings.bgColor === '#ffffff' ? 'none' : '0 1px 1px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {card.text}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Context Actions */}
+                  <div className="absolute right-4 top-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
+                    <button 
+                      onClick={() => setCards(cards.filter(c => c.id !== card.id))} 
+                      className="p-2.5 bg-white/90 shadow-lg rounded-lg text-red-400 hover:text-red-600"
+                    >
+                      <Trash2 size={16}/>
+                    </button>
+                    <button 
+                      onClick={() => triggerUpload(card.id)}
+                      className="p-2.5 bg-white/90 shadow-lg rounded-lg text-green-700 hover:text-green-800"
+                    >
+                      <ImageIcon size={16}/>
+                    </button>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between px-2 opacity-40">
+                    <span className="text-[10px] font-bold tracking-tighter text-green-900 uppercase italic">Mori Card Series</span>
+                    <span className="text-[10px] font-bold text-green-950">NO.{index + 1}</span>
+                  </div>
+                </div>
+              ))}
+
+              <button 
+                onClick={() => setCards([...cards, { id: `card-${Date.now()}`, text: "新内容...", customBg: null }])}
+                className="w-full aspect-[9/16] rounded-xl border border-dashed border-green-300/50 flex flex-col items-center justify-center group hover:bg-white/40 transition-all bg-white/5"
+              >
+                <Plus size={24} className="text-green-300 group-hover:scale-125 transition-transform" />
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
