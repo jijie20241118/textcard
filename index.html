@@ -24,15 +24,19 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #81c784; border-radius: 10px; }
         
         .card-preview {
-            width: 320px;
-            height: 568px;
+            width: 320px; /* Base width */
             position: relative;
             overflow: hidden;
             box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
             background-color: white;
             flex-shrink: 0;
         }
+
+        /* Ratio Classes */
+        .ratio-9-16 { height: 568px; }
+        .ratio-3-4 { height: 426px; }
+
         .card-content-area {
             white-space: pre-wrap;
             word-break: break-all;
@@ -73,7 +77,6 @@
             color: #ef4444;
             border-color: #fee2e2;
         }
-        /* 语言切换按钮样式 */
         .lang-toggle {
             display: flex;
             background: rgba(22, 101, 52, 0.1);
@@ -111,7 +114,6 @@
             </div>
 
             <div class="flex items-center">
-                <!-- Language Toggle -->
                 <div class="lang-toggle mr-4">
                     <button onclick="changeLang('zh')" id="lang-zh" class="lang-btn active">中文</button>
                     <button onclick="changeLang('en')" id="lang-en" class="lang-btn">EN</button>
@@ -131,10 +133,18 @@
                 <!-- Split Strategy -->
                 <section>
                     <label class="ui-text-label uppercase" data-i18n="splitMode">拆分模式</label>
-                    <div class="grid grid-cols-3 gap-1 p-1 bg-green-900/10 rounded-xl border border-green-900/5">
+                    <div class="grid grid-cols-2 gap-1 p-1 bg-green-900/10 rounded-xl border border-green-900/5">
                         <button onclick="setSplitMode('separator')" class="mode-btn btn-active py-2 rounded-lg text-[10px]" data-mode="separator" data-i18n="modeSeparator">符号 (---)</button>
                         <button onclick="setSplitMode('newline')" class="mode-btn text-green-900/50 py-2 rounded-lg text-[10px]" data-mode="newline" data-i18n="modeNewline">按行拆分</button>
-                        <button onclick="setSplitMode('length')" class="mode-btn text-green-900/50 py-2 rounded-lg text-[10px]" data-mode="length" data-i18n="modeLength">固定长度</button>
+                    </div>
+                </section>
+
+                <!-- Aspect Ratio -->
+                <section>
+                    <label class="ui-text-label uppercase" data-i18n="aspectRatio">卡片比例</label>
+                    <div class="grid grid-cols-2 gap-1 p-1 bg-green-900/10 rounded-xl border border-green-900/5">
+                        <button onclick="setAspectRatio('9-16')" class="ratio-btn btn-active py-2 rounded-lg text-[10px]" data-ratio="9-16">9:16 (手机全屏)</button>
+                        <button onclick="setAspectRatio('3-4')" class="ratio-btn text-green-900/50 py-2 rounded-lg text-[10px]" data-ratio="3-4">3:4 (社交动态)</button>
                     </div>
                 </section>
 
@@ -144,7 +154,7 @@
                     <textarea 
                         id="mainInput"
                         oninput="handleInput()"
-                        class="w-full h-[45vh] p-6 bg-white shadow-inner rounded-2xl text-base outline-none focus:ring-4 focus:ring-green-700/10 transition-all border border-green-900/5 placeholder:text-stone-300 custom-scrollbar resize-none"
+                        class="w-full h-[35vh] p-6 bg-white shadow-inner rounded-2xl text-base outline-none focus:ring-4 focus:ring-green-700/10 transition-all border border-green-900/5 placeholder:text-stone-300 custom-scrollbar resize-none"
                         data-placeholder="inputPlaceholder"
                     ></textarea>
                 </section>
@@ -164,7 +174,6 @@
                         </select>
                     </div>
 
-                    <!-- Size & Padding -->
                     <div class="grid grid-cols-2 gap-6">
                         <div>
                             <div class="flex justify-between text-[10px] font-bold text-green-900/70 mb-2">
@@ -182,7 +191,6 @@
                         </div>
                     </div>
 
-                    <!-- Line Height & Letter Spacing -->
                     <div class="grid grid-cols-2 gap-6">
                         <div>
                             <div class="flex justify-between text-[10px] font-bold text-green-900/70 mb-2">
@@ -200,7 +208,6 @@
                         </div>
                     </div>
 
-                    <!-- Horizontal Alignment -->
                     <div class="space-y-4">
                         <span class="text-[10px] text-green-800/60 font-bold block" data-i18n="alignH">水平对齐</span>
                         <div class="flex gap-2 bg-green-900/10 p-1.5 rounded-xl border border-green-900/5">
@@ -210,7 +217,6 @@
                         </div>
                     </div>
 
-                    <!-- Vertical Alignment -->
                     <div class="space-y-4">
                         <span class="text-[10px] text-green-800/60 font-bold block" data-i18n="alignV">垂直对齐</span>
                         <div class="flex gap-2 bg-green-900/10 p-1.5 rounded-xl border border-green-900/5">
@@ -235,7 +241,6 @@
                         </div>
                     </div>
 
-                    <!-- Background Opacity -->
                     <div class="p-4 bg-white rounded-xl border border-green-900/5 shadow-sm">
                         <div class="flex justify-between text-[9px] font-black text-green-800/40 mb-2">
                             <span data-i18n="bgOpacity">背景图片透明度</span>
@@ -291,7 +296,7 @@
                 splitMode: "拆分模式",
                 modeSeparator: "符号 (---)",
                 modeNewline: "按行拆分",
-                modeLength: "固定长度",
+                aspectRatio: "卡片比例",
                 contentEdit: "内容编辑",
                 inputPlaceholder: "输入文字，系统将根据策略自动生成卡片...",
                 layoutControl: "版面控制",
@@ -317,7 +322,7 @@
                 splitMode: "Split Mode",
                 modeSeparator: "Symbol (---)",
                 modeNewline: "By Line",
-                modeLength: "Fixed Length",
+                aspectRatio: "Aspect Ratio",
                 contentEdit: "Content Editor",
                 inputPlaceholder: "Enter text, cards will be generated automatically...",
                 layoutControl: "Layout Control",
@@ -365,6 +370,7 @@
 
         // --- 核心逻辑 ---
         let splitMode = 'separator';
+        let currentRatio = '9-16';
         let cardSpecificBgs = {}; 
         let currentStyle = {
             fontFamily: "'Noto Serif SC', serif",
@@ -380,7 +386,7 @@
             backgroundOpacity: 0.4
         };
 
-        const defaultText = "森卡 (Mori Card)\n---\n现在支持更精细的版面控制。\n\n您可以调节：\n垂直方向的上中下对齐，\n以及更自由的行高与字距。\n---\n每一行文字，\n都值得被温柔地排布。";
+        const defaultText = "森卡 (Mori Card)\n---\n现在支持比例切换：\n9:16 或 3:4。\n\n适配全屏壁纸，\n亦可适配动态配图。\n---\n每一行文字，\n都值得被温柔地排布。";
         
         window.onload = () => {
             document.getElementById('mainInput').value = defaultText;
@@ -396,6 +402,14 @@
             renderCards();
         }
 
+        function setAspectRatio(ratio) {
+            currentRatio = ratio;
+            document.querySelectorAll('.ratio-btn').forEach(btn => {
+                btn.dataset.ratio === ratio ? btn.classList.add('btn-active') : btn.classList.remove('btn-active');
+            });
+            renderCards();
+        }
+
         function handleInput() {
             renderCards();
         }
@@ -404,11 +418,6 @@
             if (!text.trim()) return [];
             if (splitMode === 'separator') return text.split('---').map(s => s.trim()).filter(s => s !== '');
             if (splitMode === 'newline') return text.split('\n').map(s => s.trim()).filter(s => s !== '');
-            if (splitMode === 'length') {
-                const chunks = [];
-                for (let i = 0; i < text.length; i += 120) chunks.push(text.slice(i, i + 120));
-                return chunks;
-            }
             return [text];
         }
 
@@ -469,7 +478,7 @@
                 cardWrapper.className = 'flex flex-col gap-4 group';
                 
                 const card = document.createElement('div');
-                card.className = 'card-preview rounded-3xl';
+                card.className = `card-preview rounded-3xl ratio-${currentRatio}`;
                 card.id = `card-${i}`;
                 card.style.backgroundColor = currentStyle.backgroundColor;
 
@@ -555,13 +564,15 @@
                 const actions = cards[i].querySelector('.group-hover\\:opacity-100');
                 if(actions) actions.style.display = 'none';
 
+                const targetHeight = currentRatio === '9-16' ? 568 : 426;
+
                 const canvas = await html2canvas(cards[i], {
                     scale: 3,
                     useCORS: true,
                     backgroundColor: currentStyle.backgroundColor,
                     logging: false,
                     width: 320,
-                    height: 568
+                    height: targetHeight
                 });
                 
                 if(actions) actions.style.display = 'flex';
