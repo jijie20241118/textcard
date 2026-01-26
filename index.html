@@ -6,23 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- 这里决定了浏览器标签页显示什么，也是搜索结果的大标题 -->
-    <title>Mori Card 森卡 - 极简文字卡片制作工具 | 长文切分与朋友圈配图生成</title>
+    <title>WanderIsland-TextCard|极简文字卡片制作工具 | 长文切分与朋友圈配图生成</title>
     
     <!-- 这里是搜索结果标题下面那行灰色小字 -->
-    <meta name="description" content="Mori Card (森卡) 是一款免费的在线文字卡片制作工具。支持长文自动切分、多种艺术字体（宋体/楷体/手写）及森系配色。一键生成适合小红书、朋友圈、Instagram 的唯美文字图片，无需下载App，浏览器即可使用。">
+    <meta name="description" content="WanderIsland-TextCard 是一款免费的在线文字卡片制作工具。支持长文自动切分、多种艺术字体（宋体/楷体/手写）及多种配色。一键生成适合小红书、朋友圈、Instagram 的唯美文字图片，无需下载App，浏览器即可使用。">
     
     <!-- 这里是给搜索引擎看的关键词 -->
-    <meta name="keywords" content="Mori Card, 森卡, 文字卡片, 长图切分, 金句卡片, 小红书配图, 朋友圈文案图, 在线排版工具, 极简设计, 字体生成器">
+    <meta name="keywords" content="WanderIsland, Textcard, 文字卡片, 长图切分, 金句卡片, 小红书配图, 朋友圈文案图, 在线排版工具, 极简设计, 字体生成器">
     
     <!-- 作者 -->
     <meta name="author" content="jijie20241118">
 
     <!-- 微信/推特分享时的卡片信息 -->
-    <meta property="og:title" content="Mori Card 森卡 - 把文字变成唯美的卡片">
+    <meta property="og:title" content="WanderIsland - 把文字变成唯美的卡片">
     <meta property="og:description" content="极简、森系的在线文字切分工具，支持多种字体和背景，一键导出高清图。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://jijie20241118.github.io/textcard/">
-    <title>Mori Card - 极简文字卡片切分器</title>
+    <title>WanderIsland-TextCard | 极简文字卡片切分器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@200;400;700&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&family=Inter:wght@200;400&display=swap" rel="stylesheet">
@@ -137,8 +137,8 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7A7.1 7.1 0 1 1 5 13.1"/><path d="m7 21 7.9-6.3"/><path d="m11 21 4.7-9.4"/><path d="m14 21 2.1-4.2"/></svg>
                 </div>
                 <div class="flex flex-col">
-                    <span class="text-sm font-black tracking-widest text-green-900 leading-none">MORI CARD</span>
-                    <span class="text-[9px] font-bold tracking-[0.25em] text-green-700/70 uppercase">Forest Aesthetic</span>
+                    <span class="text-sm font-black tracking-widest text-green-900 leading-none">WanderIsland-TextCard</span>
+                    <span class="text-[9px] font-bold tracking-[0.25em] text-green-700/70 uppercase">Find Yourself.</span>
                 </div>
             </div>
 
@@ -339,7 +339,7 @@
                 contactMe: "联系方式",
                 page: "第",
                 exporting: "导出中...",
-                studio: "Mori Studio"
+                studio: "WanderIsland"
             },
             en: {
                 exportBtn: "Batch Export HD",
@@ -366,7 +366,7 @@
                 contactMe: "Contact Me",
                 page: "PAGE",
                 exporting: "Exporting...",
-                studio: "Mori Studio"
+                studio: "WanderIsland"
             }
         };
 
@@ -655,7 +655,7 @@
                 if(actions) actions.style.visibility = 'visible';
 
                 const link = document.createElement('a');
-                link.download = `mori-card-${i+1}.png`;
+                link.download = `WanderIsland-TextCard-${i+1}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 await new Promise(r => setTimeout(r, 600));
