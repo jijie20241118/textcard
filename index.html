@@ -649,7 +649,12 @@
                     backgroundColor: currentStyle.backgroundColor,
                     logging: false,
                     width: 320,
-                    height: targetHeight
+                    height: targetHeight,
+                    // 克隆回调：确保在导出渲染时强制清除任何圆角
+                    onclone: (clonedDoc) => {
+                        const el = clonedDoc.getElementById(`card-${i}`);
+                        if(el) el.style.borderRadius = "0px";
+                    }
                 });
                 
                 if(actions) actions.style.visibility = 'visible';
